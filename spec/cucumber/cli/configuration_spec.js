@@ -193,9 +193,11 @@ describe("Cucumber.Cli.Configuration", function () {
     beforeEach(function () {
       astFilter      = createSpyWithStubs("AST filter");
       tagFilterRules = [];
+      partRules      = createSpy("part specs");
       scenarioByLineFilterRules = createSpy("line specs");
       spyOn(Cucumber.Ast, 'Filter').andReturn(astFilter);
       spyOn(configuration, 'getTagAstFilterRules').andReturn(tagFilterRules);
+      spyOn(configuration, 'getModularPartitioningRules').andReturn(partRules);
       spyOn(configuration, 'getSingleScenarioAstFilterRule').andReturn(scenarioByLineFilterRules);
     });
 
@@ -206,7 +208,7 @@ describe("Cucumber.Cli.Configuration", function () {
 
     it("instantiates an AST filter", function () {
       configuration.getAstFilter();
-      expect(Cucumber.Ast.Filter).toHaveBeenCalledWith(tagFilterRules);
+      expect(Cucumber.Ast.Filter).toHaveBeenCalledWith([].concat(tagFilterRules).concat(partRules));
     });
 
     it("returns the AST filter", function () {
