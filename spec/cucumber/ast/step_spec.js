@@ -2,37 +2,36 @@ require('../../support/spec_helper');
 
 describe("Cucumber.Ast.Step", function () {
   var Cucumber = requireLib('cucumber');
-  var step, keyword, name, uri, line;
+  var data, keyword, line, step, keyword, name, uri;
 
   beforeEach(function () {
-    name         = createSpy("name");
-    keyword      = createSpy("keyword");
-    uri          = createSpy("uri");
-    line         = createSpy("line");
-    step         = Cucumber.Ast.Step(keyword, name, uri, line);
+    keyword = createSpy("keyword");
+    line    = createSpy("line");
+    text    = createSpy("text");
+    uri     = createSpy("uri");
+    data = {
+      keyword: keyword,
+      location: {line: line},
+      text: text
+    }
+    step = Cucumber.Ast.Step(data, uri);
   });
 
   describe("getKeyword()", function () {
-    it("returns the keyword of the step", function () {
+    it("returns the keyword", function () {
       expect(step.getKeyword()).toBe(keyword);
     });
   });
 
   describe("getName()", function () {
-    it("returns the name of the step", function () {
-      expect(step.getName()).toBe(name);
+    it("returns the text", function () {
+      expect(step.getName()).toBe(text);
     });
   });
 
   describe("isHidden()", function () {
     it("returns false for a non hook step", function () {
       expect(step.isHidden()).toBe(false);
-    });
-  });
-
-  describe("isOutlineStep()", function () {
-    it("returns false for a non outline step", function () {
-      expect(step.isOutlineStep()).toBe(false);
     });
   });
 
@@ -74,7 +73,7 @@ describe("Cucumber.Ast.Step", function () {
     });
   });
 
-  describe("hasDocString() [attachDocString()]", function () {
+  describe("hasDocString()", function () {
     var docString;
 
     beforeEach(function () {
@@ -82,7 +81,8 @@ describe("Cucumber.Ast.Step", function () {
     });
 
     it("returns true when a DocString was attached to the step", function () {
-      step.attachDocString(docString);
+      data.argument = {type: 'DocString'}
+      step = Cucumber.Ast.Step(data, uri);
       expect(step.hasDocString()).toBeTruthy();
     });
 
@@ -91,16 +91,18 @@ describe("Cucumber.Ast.Step", function () {
     });
   });
 
-  describe("getDocString() [attachDocString()]", function () {
-    var docString;
+  describe("getDocString()", function () {
 
-    beforeEach(function () {
-      docString = createSpy("DocString");
+    it("returns the doc string when the step has a doc", function () {
+      var docString = createSpy('doc string');
+      spyOn(Cucumber.Ast, 'DocString').andReturn(docString);
+      data.argument = {type: 'DocString'};
+      step = Cucumber.Ast.Step(data);
+      expect(step.getDocString()).toBe(docString);
     });
 
-    it("returns the DocString that was attached to the step through attachDocString()", function () {
-      step.attachDocString(docString);
-      expect(step.getDocString()).toBe(docString);
+    it("returns 'undefined' when the step has no doc string", function () {
+      expect(step.getDataTable()).toBeUndefined();
     });
   });
 
@@ -260,107 +262,28 @@ describe("Cucumber.Ast.Step", function () {
     });
   });
 
-  describe("attachDataTableRow()", function () {
-    var row, dataTable;
-
-    beforeEach(function () {
-      row       = createSpy("data table row");
-      dataTable = createSpyWithStubs("data table", {attachRow: null});
-      spyOn(step, 'ensureDataTableIsAttached');
-      spyOn(step, 'getDataTable').andReturn(dataTable);
-    });
-
-    it("ensures there is a data table attached already", function () {
-      step.attachDataTableRow(row);
-      expect(step.ensureDataTableIsAttached).toHaveBeenCalled();
-    });
-
-    it("gets the attached data table", function () {
-      step.attachDataTableRow(row);
-      expect(step.getDataTable).toHaveBeenCalled();
-    });
-
-    it("attaches the row to the data table", function () {
-      step.attachDataTableRow(row);
-      expect(dataTable.attachRow).toHaveBeenCalledWith(row);
-    });
-  });
-
-  describe("ensureDataTableIsAttached()", function () {
-    var dataTable;
-
-    beforeEach(function () {
-      spyOn(step, 'getDataTable');
-      spyOn(step, 'attachDataTable');
-      spyOn(Cucumber.Ast, 'DataTable');
-    });
-
-    it("gets the current data table", function () {
-      step.ensureDataTableIsAttached();
-      expect(step.getDataTable).toHaveBeenCalled();
-    });
-
-    describe("when there is no data table yet", function () {
-      beforeEach(function () {
-        dataTable = createSpy("new data table");
-        step.getDataTable.andReturn(undefined);
-        Cucumber.Ast.DataTable.andReturn(dataTable);
-      });
-
-      it("creates a new data table", function () {
-        step.ensureDataTableIsAttached();
-        expect(Cucumber.Ast.DataTable).toHaveBeenCalled();
-      });
-
-      it("attaches the new data table to the step", function () {
-        step.ensureDataTableIsAttached();
-        expect(step.attachDataTable).toHaveBeenCalledWith(dataTable);
-      });
-    });
-
-    describe("when there is a data table already", function () {
-      beforeEach(function () {
-        dataTable = createSpy("existing data table");
-        step.getDataTable.andReturn(dataTable);
-      });
-
-      it("does not create a new data table", function () {
-        step.ensureDataTableIsAttached();
-        expect(Cucumber.Ast.DataTable).not.toHaveBeenCalled();
-      });
-
-      it("does not attach a data table to the step", function () {
-        step.ensureDataTableIsAttached();
-        expect(step.attachDataTable).not.toHaveBeenCalledWith(dataTable);
-      });
-    });
-  });
-
-  describe("hasDataTable() [attachDataTable()]", function () {
-    var dataTable;
-
-    beforeEach(function () {
-      dataTable = createSpy("data table");
-    });
-
-    it("returns true when a data table was attached to the step", function () {
-      step.attachDataTable(dataTable);
+  describe("hasDataTable()", function () {
+    it("returns true when the step has a data table", function () {
+      data.argument = {type: 'DataTable', rows: []};
+      step = Cucumber.Ast.Step(data);
       expect(step.hasDataTable()).toBeTruthy();
     });
 
-    it("returns false when no DocString was attached to the step", function () {
+    it("returns false when the step does not have data table", function () {
       expect(step.hasDataTable()).toBeFalsy();
     });
   });
 
-  describe("getDataTable() [attachDataTable()]", function () {
-    it("returns the attached data table when one was attached", function () {
-      var dataTable;
-      step.attachDataTable(dataTable);
+  describe("getDataTable()", function () {
+    it("returns the data table when the step has a data table", function () {
+      var dataTable = createSpy('data table');
+      spyOn(Cucumber.Ast, 'DataTable').andReturn(dataTable);
+      data.argument = {type: 'DataTable'};
+      step = Cucumber.Ast.Step(data);
       expect(step.getDataTable()).toBe(dataTable);
     });
 
-    it("returns 'undefined' when no data table was attached", function () {
+    it("returns 'undefined' when the step has no data table", function () {
       expect(step.getDataTable()).toBeUndefined();
     });
   });
@@ -433,7 +356,7 @@ describe("Cucumber.Ast.Step", function () {
 
   describe("hasOutcomeStepKeyword()", function () {
     it("returns true when the keyword is 'Then '", function () {
-      step = Cucumber.Ast.Step('Then ', name, line);
+      step = Cucumber.Ast.Step({keyword: 'Then '});
       expect(step.hasOutcomeStepKeyword()).toBeTruthy();
     });
 
@@ -444,7 +367,7 @@ describe("Cucumber.Ast.Step", function () {
 
   describe("hasEventStepKeyword()", function () {
     it("returns true when the keyword is 'When '", function () {
-      step = Cucumber.Ast.Step('When ', name, line);
+      step = Cucumber.Ast.Step({keyword: 'When '});
       expect(step.hasEventStepKeyword()).toBeTruthy();
     });
 
@@ -571,17 +494,17 @@ describe("Cucumber.Ast.Step", function () {
 
   describe("hasRepeatStepKeyword()", function () {
     it("returns true when the keyword is 'And '", function () {
-      step = Cucumber.Ast.Step('And ', name, line);
+      step = Cucumber.Ast.Step({keyword: 'And '});
       expect(step.hasRepeatStepKeyword()).toBeTruthy();
     });
 
     it("returns true when the keyword is 'But '", function () {
-      step = Cucumber.Ast.Step('But ', name, line);
+      step = Cucumber.Ast.Step({keyword: 'But '});
       expect(step.hasRepeatStepKeyword()).toBeTruthy();
     });
 
     it("returns true when the keyword is '* '", function () {
-      step = Cucumber.Ast.Step('* ', name, line);
+      step = Cucumber.Ast.Step({keyword: '* '});
       expect(step.hasRepeatStepKeyword()).toBeTruthy();
     });
 
@@ -757,7 +680,7 @@ describe("Cucumber.Ast.Step", function () {
 
     it("uses the visitor to look up the step definition based on the step string", function () {
       step.getStepDefinition(visitor);
-      expect(visitor.lookupStepDefinitionByName).toHaveBeenCalledWith(name);
+      expect(visitor.lookupStepDefinitionByName).toHaveBeenCalledWith(text);
     });
 
     it("returns the step definition", function () {

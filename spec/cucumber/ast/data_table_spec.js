@@ -3,20 +3,31 @@ require('../../support/spec_helper');
 describe("Cucumber.Ast.DataTable", function () {
   var Cucumber = requireLib('cucumber');
 
-  var dataTable;
+  var dataTable, row1, row1Data, row1Raw, row2, row2Data, row2Raw;
 
   beforeEach(function () {
-    dataTable = Cucumber.Ast.DataTable();
+    row1Raw   = createSpy('row1 raw');
+    row1      = createSpyWithStubs('row1', {raw: row1Raw});
+    row1Data  = createSpy('row1 data');
+    row2Raw   = createSpy('row2 raw');
+    row2      = createSpyWithStubs('row2', {raw: row2Raw});
+    row2Data  = createSpy('row2 data');
+    var data = {
+      rows: [row1Data, row2Data]
+    };
+    spyOn(Cucumber.Ast.DataTable, 'Row').andCallFake(function (data) {
+      if (data === row1Data)
+        return row1;
+      else if (data === row2Data)
+        return row2;
+    });
+    dataTable = Cucumber.Ast.DataTable(data);
   });
 
-  describe("attachRow() [getRows]", function () {
-    var row;
-
-    it("adds the row to the row collection", function () {
-      dataTable.attachRow(row);
-      var rows = dataTable.getRows();
-      expect(rows.length()).toBe(1);
-      expect(rows.getAtIndex(0)).toBe(row);
+  describe("constructor", function () {
+    it("creates rows", function () {
+      expect(Cucumber.Ast.DataTable.Row).toHaveBeenCalledWith(row1Data);
+      expect(Cucumber.Ast.DataTable.Row).toHaveBeenCalledWith(row2Data);
     });
   });
 
@@ -27,111 +38,51 @@ describe("Cucumber.Ast.DataTable", function () {
   });
 
   describe("raw()", function () {
-    var rowArray, rawRows;
-
-    beforeEach(function () {
-      rawRows  = [
-        createSpy("raw row 1"),
-        createSpy("raw row 2")
-      ];
-      rowArray = [
-        createSpyWithStubs("row 1", {raw: rawRows[0]}),
-        createSpyWithStubs("row 2", {raw: rawRows[1]})
-      ];
-      dataTable.attachRow(rowArray[0]);
-      dataTable.attachRow(rowArray[1]);
-    });
-
     it("returns the raw representations in an array", function () {
-      expect(dataTable.raw()).toEqual(rawRows);
+      expect(dataTable.raw()).toEqual([row1Raw, row2Raw]);
     });
   });
 
   describe("rows()", function () {
-    var rawRows, rowArray;
-
-    beforeEach(function () {
-      rawRows = [
-        createSpy("raw row 1"),
-        createSpy("raw row 2")];
-      rowArray = [
-        createSpyWithStubs("row 1", {raw: rawRows[0]}),
-        createSpyWithStubs("row 2", {raw: rawRows[1]})
-      ];
-      dataTable.attachRow(rowArray[0]);
-      dataTable.attachRow(rowArray[1]);
-    });
-
-    it("gets the raw representation of the row without the header", function () {
+    it("gets the raw representation of the rows without the header", function () {
       var actualRows = dataTable.rows();
-      expect(rowArray[1].raw).toHaveBeenCalled();
-      expect(rowArray[0].raw).not.toHaveBeenCalled();
-      expect(actualRows).toEqual([rawRows[1]]);
+      expect(actualRows).toEqual([row2Raw]);
     });
   });
 
   describe("getRows()", function () {
-    var rowArray;
-
-    beforeEach(function () {
-      rowArray = [
-        createSpyWithStubs("row 1"),
-        createSpyWithStubs("row 2")
-      ];
-      dataTable.attachRow(rowArray[0]);
-      dataTable.attachRow(rowArray[1]);
-    });
-
     it("gets the raw representation of the rows, including the header", function () {
       var actualRows = dataTable.getRows();
       expect(actualRows.length()).toEqual(2);
-      expect(actualRows.getAtIndex(0)).toEqual(rowArray[0]);
-      expect(actualRows.getAtIndex(1)).toEqual(rowArray[1]);
+      expect(actualRows.getAtIndex(0)).toEqual(row1);
+      expect(actualRows.getAtIndex(1)).toEqual(row2);
     });
 
     it("returns a new row collection every time", function () {
       var actualRows1 = dataTable.getRows();
-      expect(actualRows1.length()).toEqual(2);
-      expect(actualRows1.getAtIndex(0)).toEqual(rowArray[0]);
-      expect(actualRows1.getAtIndex(1)).toEqual(rowArray[1]);
-
       var actualRows2 = dataTable.getRows();
-      expect(actualRows2.length()).toEqual(2);
-      expect(actualRows2.getAtIndex(0)).toEqual(rowArray[0]);
-      expect(actualRows2.getAtIndex(1)).toEqual(rowArray[1]);
-
       expect(actualRows2).toNotBe(actualRows1);
     });
   });
 
   describe("rowsHash", function () {
+    var raw;
+
     it("returns a hash of the rows", function () {
-      var rawRows = [
-            ['pig', 'oink'],
-            ['cat', 'meow'],
-          ],
-          rowArray = [
-            createSpyWithStubs("row 1", {raw: rawRows[0]}),
-            createSpyWithStubs("row 2", {raw: rawRows[1]}),
-          ];
-      dataTable.attachRow(rowArray[0]);
-      dataTable.attachRow(rowArray[1]);
-      
+      raw = [
+        ['pig', 'oink'],
+        ['cat', 'meow'],
+      ];
+      spyOn(dataTable, 'raw').andReturn(raw);
       expect(dataTable.rowsHash()).toEqual({pig: 'oink', cat: 'meow'});
     });
 
     it("fails if the table doesn't have two columns", function () {
-      var rawRows = [
-            ['one', 'two', 'three'],
-            ['cat', 'dog', 'pig']
-          ],
-          rowArray = [
-            createSpyWithStubs("row 1", {raw: rawRows[0]}),
-            createSpyWithStubs("row 2", {raw: rawRows[1]}),
-          ];
-      dataTable.attachRow(rowArray[0]);
-      dataTable.attachRow(rowArray[1]);
-      
+      raw = [
+        ['one', 'two', 'three'],
+        ['cat', 'dog', 'pig']
+      ];
+      spyOn(dataTable, 'raw').andReturn(raw);
       expect(function () {
         dataTable.rowsHash();
       }).toThrow();

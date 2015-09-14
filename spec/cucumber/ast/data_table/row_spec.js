@@ -1,21 +1,24 @@
 require('../../../support/spec_helper');
 
-describe("Cucumber.Ast.Feature", function () {
+describe("Cucumber.Ast.DataTable.Row", function () {
   var Cucumber = requireLib('cucumber');
 
-  var row, cells, uri, line;
+  var cells, line, row;
 
   beforeEach(function () {
-    cells = ['a', 'b', '1'];
-    uri   = createSpy("uri");
+    cells = [{value: 'a'}, {value: 'b'}];
     line  = createSpy("line");
-    row   = Cucumber.Ast.DataTable.Row(cells, uri, line);
+    var data = {
+      cells: cells,
+      location: {line: line}
+    }
+    row = Cucumber.Ast.DataTable.Row(data);
   });
 
   describe("raw()", function () {
     it("returns a copy of the cells", function () {
       expect(row.raw()).not.toBe(cells);
-      expect(row.raw()).toEqual(['a', 'b', '1']);
+      expect(row.raw()).toEqual(['a', 'b']);
     });
   });
 

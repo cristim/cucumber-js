@@ -3,13 +3,17 @@ require('../../support/spec_helper');
 describe("Cucumber.Ast.Tag", function () {
   var Cucumber = requireLib('cucumber');
 
-  var tag, name, uri, line;
+  var line, name, tag, uri;
 
   beforeEach(function () {
+    line = createSpy("line");
     name = createSpy("name");
     uri  = createSpy("uri");
-    line = createSpy("line");
-    tag  = Cucumber.Ast.Tag(name, uri, line);
+    var data = {
+      name: name,
+      location: {line: line}
+    };
+    tag = Cucumber.Ast.Tag(data, uri);
   });
 
   describe("getName()", function () {

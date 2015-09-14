@@ -2,98 +2,82 @@ require('../../support/spec_helper');
 
 describe("Cucumber.Ast.Background", function () {
   var Cucumber = requireLib('cucumber');
-  var steps;
-  var background, keyword, name, description, uri, line, lastStep;
+  var background, description, keyword, name, line, step1, step1Data, step2, step2Data, uri;
 
   beforeEach(function () {
-    keyword     = createSpy("background keyword");
-    name        = createSpy("background name");
-    description = createSpy("background description");
+    description = createSpy("description");
+    keyword     = createSpy("keyword");
+    name        = createSpy("name");
+    line        = createSpy("line");
+    step1       = createSpyWithStubs('step1', {setPreviousStep: true});
+    step1Data   = createSpy("step1 data");
+    step2       = createSpyWithStubs('step2', {setPreviousStep: true});
+    step2Data   = createSpy("step2 data");
     uri         = createSpy("uri");
-    line        = createSpy("starting background line number");
-    lastStep    = createSpy("Last step");
-    steps       = createSpy("Step collection");
-    spyOnStub(steps, 'add');
-    spyOnStub(steps, 'getLast').andReturn(lastStep);
-    spyOn(Cucumber.Type, 'Collection').andReturn(steps);
-    background = Cucumber.Ast.Background(keyword, name, description, uri, line);
+    var data = {
+      description: description,
+      keyword: keyword,
+      location: {line: line},
+      name: name,
+      steps: [step1Data, step2Data]
+    };
+    spyOn(Cucumber.Ast, 'Step').andCallFake(function(data) {
+      if (data === step1Data)
+        return step1;
+      else if (data === step2Data)
+        return step2;
+    });
+    background = Cucumber.Ast.Background(data, uri);
   });
 
   describe("constructor", function () {
-    it("creates a new collection to store steps", function () {
-      expect(Cucumber.Type.Collection).toHaveBeenCalled();
+    it("creates steps", function () {
+      expect(Cucumber.Ast.Step).toHaveBeenCalledWith(step1Data, uri);
+      expect(Cucumber.Ast.Step).toHaveBeenCalledWith(step2Data, uri);
+    });
+
+    it("sets previous steps", function () {
+      expect(step1.setPreviousStep).toHaveBeenCalledWith(undefined);
+      expect(step2.setPreviousStep).toHaveBeenCalledWith(step1);
     });
   });
 
   describe("getKeyword()", function () {
-    it("returns the keyword of the background", function () {
+    it("returns the keyword", function () {
       expect(background.getKeyword()).toBe(keyword);
     });
   });
 
   describe("getName()", function () {
-    it("returns the name of the background", function () {
+    it("returns the name", function () {
       expect(background.getName()).toBe(name);
     });
   });
 
   describe("getDescription()", function () {
-    it("returns the description of the background", function () {
+    it("returns the description", function () {
       expect(background.getDescription()).toBe(description);
     });
   });
 
   describe("getUri()", function () {
-    it("returns the URI on which the background starts", function () {
+    it("returns the URI", function () {
       expect(background.getUri()).toBe(uri);
     });
   });
 
   describe("getLine()", function () {
-    it("returns the line on which the background starts", function () {
+    it("returns the line", function () {
       expect(background.getLine()).toBe(line);
     });
   });
 
-  describe("addStep()", function () {
-    var step, lastStep;
-
-    beforeEach(function () {
-      step = createSpyWithStubs("step AST element", {setPreviousStep: null});
-      lastStep = createSpy("last step");
-      spyOn(background, 'getLastStep').andReturn(lastStep);
-    });
-
-    it("gets the last step", function () {
-      background.addStep(step);
-      expect(background.getLastStep).toHaveBeenCalled();
-    });
-
-    it("sets the last step as the previous step", function () {
-      background.addStep(step);
-      expect(step.setPreviousStep).toHaveBeenCalledWith(lastStep);
-    });
-
-    it("adds the step to the steps (collection)", function () {
-      background.addStep(step);
-      expect(steps.add).toHaveBeenCalledWith(step);
-    });
-  });
-
-  describe("getLastStep()", function () {
-    it("gets the last step from the collection", function () {
-      background.getLastStep();
-      expect(steps.getLast).toHaveBeenCalled();
-    });
-
-    it("returns that last step from the collection", function () {
-      expect(background.getLastStep()).toBe(lastStep);
-    });
-  });
-
   describe("getSteps()", function () {
-    it("returns the steps", function () {
-      expect(background.getSteps()).toBe(steps);
+    it("returns the steps as a Cucumber.Type.Collection", function () {
+      var result = background.getSteps();
+      expect(result.length()).toBe(2);
+      expect(result.getAtIndex(0)).toBe(step1);
+      expect(result.getAtIndex(1)).toBe(step2);
     });
   });
 });

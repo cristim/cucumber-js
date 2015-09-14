@@ -5,23 +5,56 @@ describe("Cucumber.Ast.Scenario", function () {
   var scenario, steps, keyword, name, description, uri, line, lastStep;
 
   beforeEach(function () {
-    keyword     = createSpy("scenario keyword");
-    name        = createSpy("scenario name");
-    description = createSpy("scenario description");
+    description = createSpy("description");
+    keyword     = createSpy("keyword");
+    name        = createSpy("name");
+    line        = createSpy("line");
+    step1       = createSpyWithStubs('step1', {setPreviousStep: true});
+    step1Data   = createSpy("step1 data");
+    step2       = createSpyWithStubs('step2', {setPreviousStep: true});
+    step2Data   = createSpy("step2 data");
+    tag1        = createSpy('tag1');
+    tag1Data    = createSpy('tag1Data');
+    tag2        = createSpy('tag2');
+    tag2Data    = createSpy('tag2Data');
     uri         = createSpy("uri");
-    line        = createSpy("starting scenario line number");
-    lastStep    = createSpy("last step");
-    steps       = createSpy("step collection");
-    spyOnStub(steps, 'add');
-    spyOnStub(steps, 'getLast').andReturn(lastStep);
-    spyOn(Cucumber.Type, 'Collection').andReturn(steps);
-
-    scenario = Cucumber.Ast.Scenario(keyword, name, description, uri, line);
+    var data = {
+      description: description,
+      keyword: keyword,
+      location: {line: line},
+      name: name,
+      steps: [step1Data, step2Data],
+      tags: [tag1Data, tag2Data]
+    };
+    spyOn(Cucumber.Ast, 'Step').andCallFake(function(data) {
+      if (data === step1Data)
+        return step1;
+      else if (data === step2Data)
+        return step2;
+    });
+    spyOn(Cucumber.Ast, 'Tag').andCallFake(function(data) {
+      if (data === tag1Data)
+        return tag1;
+      else if (data === tag2Data)
+        return tag2;
+    });
+    scenario = Cucumber.Ast.Scenario(data, uri);
   });
 
   describe("constructor", function () {
-    it("creates a new collection to store steps", function () {
-      expect(Cucumber.Type.Collection).toHaveBeenCalled();
+    it("creates steps", function () {
+      expect(Cucumber.Ast.Step).toHaveBeenCalledWith(step1Data, uri);
+      expect(Cucumber.Ast.Step).toHaveBeenCalledWith(step2Data, uri);
+    });
+
+    it("sets previous steps", function () {
+      expect(step1.setPreviousStep).toHaveBeenCalledWith(undefined);
+      expect(step2.setPreviousStep).toHaveBeenCalledWith(step1);
+    });
+
+    it("creates tags", function () {
+      expect(Cucumber.Ast.Tag).toHaveBeenCalledWith(tag1Data, uri);
+      expect(Cucumber.Ast.Tag).toHaveBeenCalledWith(tag2Data, uri);
     });
   });
 
@@ -55,12 +88,6 @@ describe("Cucumber.Ast.Scenario", function () {
     });
   });
 
-  describe("isScenarioOutline()", function () {
-    it("returns false", function () {
-      expect(scenario.isScenarioOutline()).toBeFalsy();
-    });
-  });
-
   describe("getBackground() [setBackground()]", function () {
     it("returns the background that was set as such", function () {
       var background = createSpy("background");
@@ -69,54 +96,9 @@ describe("Cucumber.Ast.Scenario", function () {
     });
   });
 
-  describe("addStep()", function () {
-    var step, lastStep;
-
-    beforeEach(function () {
-      step = createSpyWithStubs("step AST element", {setPreviousStep: null});
-      lastStep = createSpy("last step");
-      spyOn(scenario, 'getLastStep').andReturn(lastStep);
-    });
-
-    it("gets the last step", function () {
-      scenario.addStep(step);
-      expect(scenario.getLastStep).toHaveBeenCalled();
-    });
-
-    it("sets the last step as the previous step", function () {
-      scenario.addStep(step);
-      expect(step.setPreviousStep).toHaveBeenCalledWith(lastStep);
-    });
-
-    it("adds the step to the steps (collection)", function () {
-      scenario.addStep(step);
-      expect(steps.add).toHaveBeenCalledWith(step);
-    });
-  });
-
-  describe("getLastStep()", function () {
-    it("gets the last step from the collection", function () {
-      scenario.getLastStep();
-      expect(steps.getLast).toHaveBeenCalled();
-    });
-
-    it("returns that last step from the collection", function () {
-      expect(scenario.getLastStep()).toBe(lastStep);
-    });
-  });
-
-  describe("getTags() [addTags()]", function () {
-    it("returns an empty set when no tags were added", function () {
-      expect(scenario.getTags()).toEqual([]);
-    });
-
+  describe("getTags()", function () {
     it("returns the tags", function () {
-      var tag1 = createSpy("tag 1");
-      var tag2 = createSpy("tag 2");
-      var tag3 = createSpy("tag 3");
-      scenario.addTags([tag1, tag2]);
-      scenario.addTags([tag3]);
-      expect(scenario.getTags()).toEqual([tag1, tag2, tag3]);
+      expect(scenario.getTags()).toEqual([tag1, tag2]);
     });
   });
 
@@ -214,7 +196,7 @@ describe("Cucumber.Ast.Scenario", function () {
 
     it("instructs the visitor to visit the steps", function () {
       scenario.instructVisitorToVisitScenarioSteps(visitor, callback);
-      expect(scenario.instructVisitorToVisitSteps).toHaveBeenCalledWith(visitor, steps, callback);
+      expect(scenario.instructVisitorToVisitSteps).toHaveBeenCalledWith(visitor, scenario.getSteps(), callback);
     });
   });
 
