@@ -184,33 +184,49 @@ describe("Cucumber.Ast.Feature", function () {
   });
 
   describe("instructVisitorToVisitScenarios()", function () {
-    var visitor, callback;
+    var visitor, callback, scenario1, scenario1Data, scenario2, scenario2Data;
 
     beforeEach(function () {
+      scenario1       = createSpyWithStubs('scenario1', {setBackground: null, addInheritedTags: null});
+      scenario1Data   = {type: 'Scenario'}
+      scenario2       = createSpyWithStubs('scenario2', {setBackground: null, addInheritedTags: null});
+      scenario2Data   = {type: 'Scenario'}
+      spyOn(Cucumber.Ast, 'Scenario').andCallFake(function(data) {
+        if (data === scenario1Data)
+          return scenario1;
+        else if (data === scenario2Data)
+          return scenario2;
+      });
+      data.scenarioDefinitions = [scenario1Data, scenario2Data];
+      feature = Cucumber.Ast.Feature(data, uri);
       visitor  = createSpyWithStubs("Visitor", {visitScenario: null});
       callback = createSpy("Callback");
-    });
-
-    it ("iterates over the scenarios with a user function and the callback", function () {
       feature.instructVisitorToVisitScenarios(visitor, callback);
-      expect(scenarioCollection.forEach).toHaveBeenCalled();
-      expect(scenarioCollection.forEach).toHaveBeenCalledWithAFunctionAsNthParameter(1);
-      expect(scenarioCollection.forEach).toHaveBeenCalledWithValueAsNthParameter(callback, 2);
     });
 
-    describe("for each scenario", function () {
-      var userFunction, scenario, forEachCallback;
+    it("tells the visitor to visit the first scenario", function () {
+      expect(visitor.visitScenario.callCount).toEqual(1);
+      expect(visitor.visitScenario.mostRecentCall.args[0]).toEqual(scenario1);
+    })
 
-      beforeEach(function () {
-        feature.instructVisitorToVisitScenarios(visitor, callback);
-        userFunction    = scenarioCollection.forEach.mostRecentCall.args[0];
-        scenario        = createSpy("A scenario from the collection");
-        forEachCallback = createSpy("forEach() callback");
+    describe('after the first scenario has been visited', function(){
+      beforeEach(function(){
+        visitor.visitScenario.mostRecentCall.args[1]()
       });
 
-      it("tells the visitor to visit the scenario and call back when finished", function () {
-        userFunction (scenario, forEachCallback);
-        expect(visitor.visitScenario).toHaveBeenCalledWith(scenario, forEachCallback);
+      it("tells the visitor to visit the first scenario", function () {
+        expect(visitor.visitScenario.callCount).toEqual(2);
+        expect(visitor.visitScenario.mostRecentCall.args[0]).toEqual(scenario2);
+      });
+
+      describe('after the last scenario has been visited', function(){
+        beforeEach(function(){
+          visitor.visitScenario.mostRecentCall.args[1]()
+        });
+
+        it("executes the callback", function () {
+          expect(callback).toHaveBeenCalled();
+        });
       });
     });
   });
