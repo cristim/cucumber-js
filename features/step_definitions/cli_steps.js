@@ -1,4 +1,5 @@
 var cliSteps = function cliSteps() {
+  var assert          = require('assert');
   var fs              = require('fs');
   var rimraf          = require('rimraf');
   var mkdirp          = require('mkdirp');
@@ -106,13 +107,10 @@ var cliSteps = function cliSteps() {
     neutraliseVariableValuesInJson(actualJson);
     neutraliseVariableValuesInJson(expectedJson);
 
-    var actualJsonString = JSON.stringify(actualJson, null, 2);
-    var expectedJsonString = JSON.stringify(expectedJson, null, 2);
-
-    if (actualJsonString != expectedJsonString)
-      throw new Error("Expected output to match the following:\n'" + expectedJsonString + "'\n" +
-                      "Got:\n'" + actualJsonString + "'.\n" +
-                      getAdditionalErrorText(world.lastRun));
+    var message = "Expected output to match the following:\n'" + JSON.stringify(expectedJson, null, 2) + "'\n" +
+                  "Got:\n'" + JSON.stringify(actualJson, null, 2) + "'.\n" +
+                  getAdditionalErrorText(world.lastRun)
+    assert.deepEqual(actualJson, expectedJson, message);
     callback();
   });
 
