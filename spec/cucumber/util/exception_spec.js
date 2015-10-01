@@ -2,7 +2,6 @@
 require('../../support/spec_helper');
 
 describe("Cucumber.Util.Arguments", function () {
-  var DOMAIN_ERROR_EVENT = 'error';
   var UNCAUGHT_EXCEPTION_EVENT = 'uncaughtException';
 
   var Cucumber = requireLib('cucumber');
