@@ -73,7 +73,7 @@ module CucumberJsMappings
   end
 
   def write_asynchronously_failing_mapping_with_message(step_name, message)
-    append_step_definition(step_name, "setTimeout(function () { callback.fail('#{message}');}, 10);")
+    append_step_definition(step_name, "setTimeout(function () { callback('#{message}');}, 10);")
   end
 
   def write_asynchronously_failing_mapping_through_exception_with_message(step_name, message)
@@ -312,7 +312,8 @@ EOF
     expected_snippet = <<-EOF
 this.#{stepdef_keyword}(/#{stepdef_pattern}/, function (#{params}) {
   // Write code here that turns the phrase above into concrete actions
-  callback.pending();
+  // For asynchronous code, return a promise or use an additional parameter
+  // as the callback to execute when the step is complete
 });
 EOF
     assert_partial_output(expected_snippet, all_output)

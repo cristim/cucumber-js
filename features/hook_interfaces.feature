@@ -1,4 +1,4 @@
-Feature: Failing steps
+Feature: Hook interfaces
 
   Background:
     Given a file named "features/my_feature.feature" with:

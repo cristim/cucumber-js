@@ -1,4 +1,4 @@
-Feature: Failing steps
+Feature: Step Definition Interfaces
 
   Background:
     Given a file named "features/fail.feature" with:

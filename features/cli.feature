@@ -73,9 +73,10 @@ Feature: Command line interface
 
       You can implement step definitions for undefined steps with these snippets:
 
-      this.When(/^a step is undefined$/, function (callback) {
+      this.When(/^a step is undefined$/, function () {
         // Write code here that turns the phrase above into concrete actions
-        callback.pending();
+        // For asynchronous code, return a promise or use an additional parameter
+        // as the callback to execute when the step is complete
       });
       """
     And the exit status should be 0
