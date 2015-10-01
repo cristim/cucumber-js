@@ -10,28 +10,9 @@ describe("Cucumber.Util.Arguments", function () {
   describe(".registerUncaughtExceptionHandler()", function () {
     var exceptionHandler, stepDomain;
 
-    beforeEach(function () {
-      stepDomain = createSpy('step domain');
-    });
-
-    describe("with a full-blown domain", function () {
-
+    describe("in node environment", function () {
       beforeEach(function () {
         exceptionHandler = createSpy("exception handler");
-        spyOnStub(stepDomain, 'on');
-        spyOnStub(stepDomain, 'enter');
-      });
-
-      it("registers the exception handler to the domain's 'error' event", function () {
-        Cucumber.Util.Exception.registerUncaughtExceptionHandler(exceptionHandler, stepDomain);
-        expect(stepDomain.on).toHaveBeenCalledWith(DOMAIN_ERROR_EVENT, exceptionHandler);
-      });
-    });
-
-    describe("without a complete domain (might be browserified domain)", function () {
-      beforeEach(function () {
-        exceptionHandler = createSpy("exception handler");
-        // no spy on stepDomain.enter/stepDomain.exit
         spyOn(process, 'on');
       });
 
@@ -65,25 +46,7 @@ describe("Cucumber.Util.Arguments", function () {
   describe(".unregisterUncaughtExceptionHandler()", function () {
     var exceptionHandler, stepDomain;
 
-    beforeEach(function () {
-      stepDomain = createSpy('step domain');
-    });
-
-    describe("with a full-blown domain", function () {
-
-      beforeEach(function () {
-        exceptionHandler = createSpy("exception handler");
-        spyOnStub(stepDomain, 'removeListener');
-        spyOnStub(stepDomain, 'exit');
-      });
-
-      it("unregisters the exception handler to the domain's 'error' event", function () {
-        Cucumber.Util.Exception.unregisterUncaughtExceptionHandler(exceptionHandler, stepDomain);
-        expect(stepDomain.removeListener).toHaveBeenCalledWith(DOMAIN_ERROR_EVENT, exceptionHandler);
-      });
-    });
-
-    describe("without a full-blown domain", function () {
+    describe("in node environment", function () {
       beforeEach(function () {
         exceptionHandler = createSpy("exception handler");
         spyOn(process, 'removeListener');
